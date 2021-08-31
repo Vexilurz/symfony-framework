@@ -34,8 +34,8 @@ class Framework
       return call_user_func_array($controller, $arguments);
     } catch (ResourceNotFoundException $exception) {
       return new Response('Not Found', 404);
-    } catch (\Exception $exception) {
-      return new Response('An error occurred', 500);
+    } catch (Exception $exception) {
+      return new Response('An error occurred: '.$exception->getMessage(), 500);
     }
   }
 }
