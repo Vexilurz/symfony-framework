@@ -2,12 +2,30 @@
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing;
 
-function is_leap_year($year = null) {
-  if (null === $year) {
-    $year = date('Y');
+class LeapYearController
+{
+  private function is_leap_year($year = null) {
+    if (!is_numeric($year)) {
+      return 0;
+    }
+
+    if (null === $year) {
+      $year = date('Y');
+    }
+
+    return 0 === $year % 400 || (0 === $year % 4 && 0 !== $year % 100);
   }
 
-  return 0 === $year % 400 || (0 === $year % 4 && 0 !== $year % 100);
+  // public function index(Response $response)    - this didn't work for me... =(
+  // https://symfony.com/doc/current/create_framework/http_kernel_controller_resolver.html
+  public function index($year)
+  {
+    if ($this->is_leap_year($year)) {
+      return new Response('Yep, this is a leap year!');
+    }
+
+    return new Response('Nope, this is not a leap year.');
+  }
 }
 
 $routes = new Routing\RouteCollection();
@@ -19,13 +37,7 @@ $routes->add('hello', new Routing\Route('/hello/{name}', [
 ]));
 $routes->add('leap_year', new Routing\Route('/is_leap_year/{year}', [
   'year' => null,
-  '_controller' => function ($request) {
-    if (is_leap_year($request->attributes->get('year'))) {
-      return new Response('Yep, this is a leap year!');
-    }
-
-    return new Response('Nope, this is not a leap year.');
-  }
+  '_controller' => 'LeapYearController::index'
 ]));
 
 return $routes;
