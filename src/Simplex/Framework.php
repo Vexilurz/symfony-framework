@@ -7,16 +7,21 @@ use Symfony\Component\HttpKernel\Controller\ArgumentResolverInterface;
 use Symfony\Component\HttpKernel\Controller\ControllerResolverInterface;
 use Symfony\Component\Routing\Matcher\UrlMatcherInterface;
 use Symfony\Component\Routing\Exception\ResourceNotFoundException;
+use Symfony\Component\EventDispatcher\EventDispatcher;
 
 class Framework
 {
+  private $dispatcher;
   private $matcher;
   private $controllerResolver;
   private $argumentResolver;
 
-  public function __construct(UrlMatcherInterface  $matcher, ControllerResolverInterface $controllerResolver,
+  public function __construct(EventDispatcher $dispatcher,
+                              UrlMatcherInterface  $matcher,
+                              ControllerResolverInterface $controllerResolver,
                               ArgumentResolverInterface $argumentResolver)
   {
+    $this->dispatcher = $dispatcher;
     $this->matcher = $matcher;
     $this->controllerResolver = $controllerResolver;
     $this->argumentResolver = $argumentResolver;
@@ -32,11 +37,16 @@ class Framework
       $controller = $this->controllerResolver->getController($request);
       $arguments = $this->argumentResolver->getArguments($request, $controller);
 
-      return call_user_func_array($controller, $arguments);
+      $response = call_user_func_array($controller, $arguments);
     } catch (ResourceNotFoundException $exception) {
-      return new Response('Not Found', 404);
+      $response = new Response('Not Found', 404);
     } catch (Exception $exception) {
-      return new Response('An error occurred: '.$exception->getMessage(), 500);
+      $response = new Response('An error occurred: '.$exception->getMessage(), 500);
     }
+
+    // dispatch a response event
+    $this->dispatcher->dispatch(new ResponseEvent($response, $request), 'response');
+
+    return $response;
   }
 }
